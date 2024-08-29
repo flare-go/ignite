@@ -49,69 +49,69 @@ type User struct {
 package main
 
 import (
-    "context"
-    "fmt"
-    "time"
-    "github.com/yourusername/ignite"
+	"context"
+	"fmt"
+	"goflare.io/ignite"
+	"time"
 )
 
 func main() {
-    // 定義物件池配置
-    config := ignite.Config[*User]{
-        InitialSize: 5,   // 初始池大小
-        MaxSize:     20,  // 最大池大小
-        MinSize:     2,   // 最小池大小
-        MaxIdleTime: 10 * time.Minute,  // 最大閒置時間
-        Factory: func() (*User, error) {
-            return &User{}, nil // 初始化 User 結構
-        },
-        Reset: func(user *User) error {
-            // 重置 User 結構（例如清空數據）
-            user.ID = 0
-            user.Name = ""
-            user.Email = ""
-            return nil
-        },
-        Validate: func(user *User) error {
-            // 檢查 User 結構是否有效
-            if user.ID == 0 {
-                return fmt.Errorf("invalid user ID")
-            }
-            return nil
-        },
-    }
+	// 定義物件池配置
+	config := ignite.Config[*User]{
+		InitialSize: 5,                // 初始池大小
+		MaxSize:     20,               // 最大池大小
+		MinSize:     2,                // 最小池大小
+		MaxIdleTime: 10 * time.Minute, // 最大閒置時間
+		Factory: func() (*User, error) {
+			return &User{}, nil // 初始化 User 結構
+		},
+		Reset: func(user *User) error {
+			// 重置 User 結構（例如清空數據）
+			user.ID = 0
+			user.Name = ""
+			user.Email = ""
+			return nil
+		},
+		Validate: func(user *User) error {
+			// 檢查 User 結構是否有效
+			if user.ID == 0 {
+				return fmt.Errorf("invalid user ID")
+			}
+			return nil
+		},
+	}
 
-    // 創建物件池
-    pool, err := ignite.NewPool(config)
-    if err != nil {
-        fmt.Println("Failed to create pool:", err)
-        return
-    }
+	// 創建物件池
+	pool, err := ignite.NewPool(config)
+	if err != nil {
+		fmt.Println("Failed to create pool:", err)
+		return
+	}
 
-    // 從池中獲取物件
-    ctx := context.Background()
-    userWrapper, err := pool.Get(ctx)
-    if err != nil {
-        fmt.Println("Failed to get user from pool:", err)
-        return
-    }
+	// 從池中獲取物件
+	ctx := context.Background()
+	userWrapper, err := pool.Get(ctx)
+	if err != nil {
+		fmt.Println("Failed to get user from pool:", err)
+		return
+	}
 
-    // 使用 User 結構
-    user := userWrapper.Object
-    user.ID = 1
-    user.Name = "John Doe"
-    user.Email = "john.doe@example.com"
-    fmt.Printf("User: %+v
-", user)
+	// 使用 User 結構
+	user := userWrapper.Object
+	user.ID = 1
+	user.Name = "John Doe"
+	user.Email = "john.doe@example.com"
+	fmt.Printf("User: %+v
+	", user)
 
-    // 歸還 User 結構到池中
-    pool.Put(userWrapper)
+	// 歸還 User 結構到池中
+	pool.Put(userWrapper)
 
-    // 關閉池
-    err = pool.Close(ctx)
-    if err != nil {
-        fmt.Println("Failed to close pool:", err)
-    }
+	// 關閉池
+	err = pool.Close(ctx)
+	if err != nil {
+		fmt.Println("Failed to close pool:", err)
+	}
 }
 ```
 
