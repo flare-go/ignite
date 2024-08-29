@@ -1,6 +1,8 @@
 
 # Ignite
 
+---
+
 <img src="./image.png" alt="Header" width="200" /> 
 
 **Ignite** 是一個通用的物件池管理庫，旨在為 Go 語言開發者提供高效的資源管理解決方案。通過該庫，可以避免過度創建和銷毀 struct，從而顯著減少 GC 壓力並提升應用程式的效能和穩定性。這個庫專為需要高效併發和靈活資源管理的應用場景設計，適用於各種資料庫連接池、物件池或任何需要頻繁創建和釋放資源的場景。
@@ -134,10 +136,151 @@ Ignite 支援自動健康檢查與清理功能，可以避免使用損壞或無�
 
 通過修改配置或擴展現有的 `Config` 和 `Pool` 接口，開發者可以定制池的行為。例如，可以增加新的健康檢查機制、定制物件的創建和銷毀邏輯等。
 
+## 貢獻 (Contributing)
+
+歡迎任何形式的貢獻！請參閱 [CONTRIBUTING.md](CONTRIBUTING.md) 了解更多信息。
+
+## 授權 (License)
+
+Ignite 根據 MIT 許可證分發。詳細信息請參閱 [LICENSE](LICENSE)。
+
+---
+
+**Ignite** is a general-purpose object pool management library designed to provide efficient resource management solutions for Go developers. With this library, you can avoid excessive creation and destruction of structs, significantly reducing GC pressure and enhancing the performance and stability of applications. It is designed for scenarios that require efficient concurrency and flexible resource management, suitable for various database connection pools, object pools, or any scenario that requires frequent creation and release of resources.
+
+## Features
+
+- **Generality**: Implemented using Go generics (`T any`), adaptable to different types of objects and resources.
+- **Efficient Concurrency**: Supports efficient object recycling and concurrent operations through `sync.Pool` and `atomic`, effectively avoiding lock contention.
+- **Flexible Configuration**: Provides rich configuration options through the `Config[T]` struct, such as initial size, maximum and minimum pool sizes, idle time, health checks, etc.
+- **Reduced GC Burden**: Significantly reduces memory allocations and garbage collection frequency through effective object reuse, lowering the workload of GC.
+- **Health Check and Cleanup**: Built-in object health check and cleanup functions ensure that objects in the pool are always in a usable state, preventing the use of invalid or damaged objects.
+- **Lightweight Dependencies**: Minimal dependencies, easy to integrate and deploy.
+- **Easy to Extend**: Provides a simple and intuitive API, allowing developers to further extend or customize the behavior of the object pool based on specific needs.
+
+## Installation
+
+To install this library, use the following command:
+
+```bash
+go get goflare.io/ignite
+```
+
+## Usage Guide
+
+### Overview
+
+`Ignite` provides a simple and efficient way to manage pooling and reuse of various objects. The following example demonstrates how to use `Ignite` to manage a custom `User` struct.
+
+### Define the User Struct
+
+First, let's define a `User` struct, which is the type of resource we want to manage.
+
+```go
+type User struct {
+    ID    int
+    Name  string
+    Email string
+}
+```
+
+### Create an Object Pool
+
+To create an object pool, you need to set up the configuration and call the `NewPool` method.
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "goflare.io/ignite"
+    "time"
+)
+
+func main() {
+    // Define object pool configuration
+    config := ignite.Config[*User]{
+        InitialSize: 5,                // Initial pool size
+        MaxSize:     20,               // Maximum pool size
+        MinSize:     2,                // Minimum pool size
+        MaxIdleTime: 10 * time.Minute, // Maximum idle time
+        Factory: func() (*User, error) {
+            return &User{}, nil // Initialize User struct
+        },
+        Reset: func(user *User) error {
+            // Reset User struct (e.g., clear data)
+            user.ID = 0
+            user.Name = ""
+            user.Email = ""
+            return nil
+        },
+        Validate: func(user *User) error {
+            // Check if the User struct is valid
+            if user.ID == 0 {
+                return fmt.Errorf("invalid user ID")
+            }
+            return nil
+        },
+    }
+
+    // Create the object pool
+    pool, err := ignite.NewPool(config)
+    if err != nil {
+        fmt.Println("Failed to create pool:", err)
+        return
+    }
+
+    // Get an object from the pool
+    ctx := context.Background()
+    userWrapper, err := pool.Get(ctx)
+    if err != nil {
+        fmt.Println("Failed to get user from pool:", err)
+        return
+    }
+
+    // Use the User struct
+    user := userWrapper.Object
+    user.ID = 1
+    user.Name = "John Doe"
+    user.Email = "john.doe@example.com"
+    fmt.Printf("User: %+v
+", user)
+
+    // Return the User struct to the pool
+    pool.Put(userWrapper)
+
+    // Close the pool
+    err = pool.Close(ctx)
+    if err != nil {
+        fmt.Println("Failed to close pool:", err)
+    }
+}
+```
+
+### Advanced Usage Scenarios
+
+#### Health Checks and Auto Cleanup
+
+Ignite supports automatic health checks and cleanup functions to avoid using damaged or invalid objects.
+
+- **Health Check**: Automatically performs regular checks on the objects in the pool to ensure their availability.
+- **Auto Cleanup**: Automatically cleans up objects that have been idle for too long based on the configured idle time.
+
+These features can be adjusted by configuring parameters such as `HealthCheck` and `MaxIdleTime`.
+
+#### Dynamic Pool Size Adjustment
+
+The size of the pool can be adjusted dynamically, allowing for changes based on current load and demand to improve resource usage efficiency. You can use the `Resize(newSize int)` method to adjust the pool size.
+
+#### Further Extension
+
+Developers can customize the behavior of the pool by modifying configurations or extending existing `Config` and `Pool` interfaces. For example, new health check mechanisms can be added, or custom object creation and destruction logic can be implemented.
+
 ## Contributing
 
 We welcome all forms of contribution! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for more information.
 
 ## License
 
-Ember is distributed under the MIT License. For more details, see [LICENSE](LICENSE).
+Ignite is distributed under the MIT License. For more details, see [LICENSE](LICENSE).
