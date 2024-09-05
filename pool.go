@@ -122,8 +122,8 @@ func (p *pool[T]) mainLoop() {
 			}
 		case <-cleanupTicker.C:
 			p.cleanup()
-		case <-healthCheckTicker.C:
-			p.performHealthCheck()
+			//case <-healthCheckTicker.C:
+			//	p.performHealthCheck()
 		}
 	}
 }
